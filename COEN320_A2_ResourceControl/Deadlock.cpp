@@ -1,6 +1,4 @@
 
-#ifdef DEADLOCK
-
 #include <stdio.h>
 #include <iostream.h>
 #include <time.h>
@@ -13,8 +11,14 @@
 #include <sys/netmgr.h>
 #include <sys/syspage.h> 
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+#include "Timer.h"
+#include "SemaphoreCeiling.h"
+#include "SemaphoreInheritance.h"
+
+#include "Deadlock.h"
+
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 #define PCnt 10 /* maximum number of threads */
 #define eps .005 
@@ -23,89 +27,12 @@ pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 #define PRIORITY_P1	0.7
 #define PRIORITY_P2	0.5
 
-float priority[PCnt] = { 0 }; /* priority of threads */
-int active_p = 0; /* determine the active threads that should be run */
+static float priority[PCnt] = { 0 }; /* priority of threads */
+static int active_p = 0; /* determine the active threads that should be run */
 
-class Ctimer
-{
-	public:
-		Ctimer(int sec, int nsec);
-		~Ctimer();
-		void settimer(long sec, long nsec);
-		void wait();
-};
+static void ThreadManager(); /* this method is already implemented */
 
-Ctimer::Ctimer(int sec, int nsec)
-{
-}
-
-Ctimer::~Ctimer()
-{
-}
-
-void Ctimer::settimer(long sec, long nsec)
-{
-}
-
-void Ctimer::wait()
-{
-	/* wait for timer tick */
-}
-
-void ThreadManager(); /* this method is already implemented */
-
-#ifdef PRIORITY_CEILING
-
-class Sem
-{
-	public:
-		float PC; /* priority ceiling of the mutex */
-		Sem ();
-		~Sem();
-		void lock(int p, Sem sp[]);
-		void unlock(int p);
-};
-
-Sem::Sem() {
-}
-
-Sem::~Sem() {
-}
-
-void Sem::lock(int p, Sem sp[]) {
-}
-
-void Sem::unlock(int p) {
-}
-
-#endif /* PRIORITY_CEILING */
-
-#ifdef PRIORITY_INHERITANCE
-
-class Sem
-{
-	public:
-		Sem ();
-		~Sem();
-		void lock(int p, Sem sp[]);
-		void unlock(int p);
-};
-
-Sem::Sem() {
-}
-
-Sem::~Sem(){
-}
-
-void Sem::lock(int p, Sem sp[]) {
-}
-
-void Sem::unlock(int p) {
-}
-
-#endif /* PRIORITY_INHERITANCE */
-
-Sem s[PCnt]; /* mutexes are instantiated here */
+static Semaphore* s[PCnt];
 
 static void* P1(void* arg)
 {
@@ -123,19 +50,19 @@ static void* P1(void* arg)
 
 		if (cnt == 1) {
 			cout << ".....Attempting to Lock Sem1 ..";
-			s[1].lock(1,s);
+			s[1]->Lock(1,s);
 		}
 		else if (cnt == 2) {
 			cout << ".....Attempting to Lock Sem2 ..";
-			s[2].lock(1,s);
+			s[2]->Lock(1,s);
 		}
 		else if (cnt == 3) {
 			cout << ".....Unlocking Sem2 ..";
-			s[2].unlock(1);
+			s[2]->Unlock(1);
 		}
 		else if (cnt == 4) {
 			cout << ".....Unlocking Sem1 ..";
-			s[1].unlock(1);
+			s[1]->Unlock(1);
 		}
 		else if (cnt == 5) {
 			cout << ".........P1 thread ends.........";
@@ -167,19 +94,19 @@ static void* P2(void* arg)
 
 		if (cnt == 1) {
 			cout << ".....Attempting to Lock Sem2 ..";
-			s[2].lock(2,s);
+			s[2]->Lock(2,s);
 		}
 		else if (cnt == 2) {
 			cout << ".....Attempting to Lock Sem1 ..";
-			s[1].lock(2,s);
+			s[1]->Lock(2,s);
 		}
 		else if (cnt == 3){
 			cout << ".....Unlocking Sem1 ..";
-			s[1].unlock(2);
+			s[1]->Unlock(2);
 		}
 		else if (cnt == 4) {
 			cout << ".....Unlocking Sem2 ..";
-			s[2].unlock(2);
+			s[2]->Unlock(2);
 		}
 		else if (cnt == 5)
 		{
@@ -196,7 +123,7 @@ static void* P2(void* arg)
 	pthread_exit(NULL);
 }
 
-void ThreadManager()
+static void ThreadManager()
 {
 	int i;
 	float p;
@@ -221,21 +148,30 @@ void ThreadManager()
 	pthread_cond_broadcast(&cond); /* send the signal to the threads */
 }
 
-int main(void)
+void run_deadlock_scenario(bool ceiling_priority)
 {
 	int cnt = 0;
 	pthread_t P1_ID, P2_ID; /* p1, p2, threads */
 	
-	#ifdef PRIORITY_CEILING
-	/* set the priority ceiling of the mutexes */
+	for (cnt = 0; cnt < PCnt; cnt++)
+	{
+		if (ceiling_priority)
+			s[cnt] = new SemaphoreCeiling();
+		else
+			s[cnt] = new SemaphoreInheritance();
+	}
+	cnt = 0;
 
-	/* s[1].PC= ???; */
-	/* s[2].PC= ???; */
-	
-	#endif
+	if (ceiling_priority)
+	{
+		/* set the priority ceiling of the mutexes */
+
+		/* s[1].PC= ???; */
+		/* s[2].PC= ???; */
+	}
 
 	/* creating a periodic  timer to generate pulses every 1 sec. */
-	Ctimer t(1,0);
+	Timer t(1, 0);
 
 	while(1)
 	{
@@ -256,15 +192,12 @@ int main(void)
 		}
 		pthread_mutex_unlock(&mutex);
 
-		t.wait(); /* wait for the timer pulse */
+		t.Wait(); /* wait for the timer pulse */
 
 		cout << endl << "tick=" << cnt << /* ", active_p = " << active_p << */ "->";
 
 		ThreadManager(); /* to find out and run the active thread */
 		cnt++;
 	}
-
-	return 0;
 }
 
-#endif /* DEADLOCK */

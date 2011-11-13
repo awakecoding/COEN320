@@ -1,5 +1,5 @@
 
-#ifdef PRIORITY_INVERSION
+#include "PriorityInversion.h"
 
 #include <stdio.h>
 #include <iostream.h>
@@ -13,8 +13,12 @@
 #include <sys/netmgr.h>
 #include <sys/syspage.h>
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+#include "Timer.h"
+#include "SemaphoreCeiling.h"
+#include "SemaphoreInheritance.h"
+
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 #define PCnt 10 /* Maximum number of threads */
 #define eps .005 
@@ -25,88 +29,12 @@ pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 #define PRIORITY_P2	0.6
 #define PRIORITY_P3	0.5
 
-float priority[PCnt] = { 0 }; /* priority of threads */
-int active_p = 0; /* determine the active thread that should be ran */
+static float priority[PCnt] = { 0 }; /* priority of threads */
+static int active_p = 0; /* determine the active thread that should be ran */
 
-class Ctimer
-{
-	public:
-		Ctimer(int sec, int nsec);
-		~Ctimer();
-		void settimer(long sec, long nsec);
-		void wait();
-};
+static void ThreadManager();
 
-Ctimer::Ctimer(int sec, int nsec)
-{
-}
-
-Ctimer::~Ctimer()
-{
-}
-
-void Ctimer::settimer(long sec, long nsec)
-{
-}
-
-void Ctimer::wait() {
-	/* wait for timer tick */
-}
-
-void ThreadManager();
-
-#ifdef PRIORITY_CEILING 
-
-class Sem
-{
-	public:
-		float PC; /* priority ceiling of the mutex */
-		Sem ();
-		~Sem();
-		void lock(int p, Sem sp[]);
-		void unlock(int p);
-};
-
-Sem::Sem() {
-}
-
-Sem::~Sem(){
-}
-
-void Sem::lock(int p, Sem sp[]) {
-}
-
-void Sem::unlock(int p){
-}
-
-#endif /* PRIORITY_CEILING */
-
-#ifdef PRIORITY_INHERITANCE
-
-class Sem
-{
-	public:
-		Sem ();
-		~Sem();
-		void lock(int p, Sem sp[]);
-		void unlock(int p);
-};
-
-Sem::Sem() {
-}
-
-Sem::~Sem() {
-}
-
-void Sem::lock(int p, Sem sp[]) {
-}
-
-void Sem::unlock(int p){
-}
-
-#endif /* PRIORITY_INHERITANCE */
-
-Sem s[PCnt]; /* mutexes are instantiated here */
+static Semaphore* s[PCnt];
 
 static void* P1(void* arg)
 {
@@ -126,13 +54,13 @@ static void* P1(void* arg)
 		{
 			/* try to acquire mutex after running for 1 unit */
 			cout << ".....Attempting to Lock Semaphore ..";
-			s[0].lock(1,s);
+			s[0]->Lock(1, s);
 		}
 		else if (cnt == 3)
 		{
 			/* release mutex after running for 3 units */
 			cout << ".....Unlocking Semaphore ..";
-			s[0].unlock(1);
+			s[0]->Unlock(1);
 		}
 		else if (cnt == 4)
 		{
@@ -195,11 +123,11 @@ static void* P3(void* arg)
 
 		if (cnt == 1) {
 			cout << ".....Attempting to Lock Semaphore ..";
-			s[0].lock(3,s);
+			s[0]->Lock(3,s);
 		}
 		else if (cnt == 3) {
 			cout << ".....Unlocking Semaphore ..";
-			s[0].unlock(3);
+			s[0]->Unlock(3);
 		}
 		else if (cnt == 5) {
 			cout << ".........P3 thread ends.........";
@@ -215,7 +143,7 @@ static void* P3(void* arg)
 	pthread_exit(NULL);
 }
 
-void ThreadManager()
+static void ThreadManager()
 {
 	int i;
 	float p;
@@ -241,20 +169,28 @@ void ThreadManager()
 	pthread_cond_broadcast(&cond); /* send the signal to the threads */
 }
 
-int main(void)
+void run_priority_inversion_scenario(bool ceiling_priority)
 {
 	int cnt = 0;
 	pthread_t P1_ID, P2_ID, P3_ID; /* p1, p2, p3 threads */
 	
-	#ifdef PRIORITY_CEILING
-	/* set the priority ceiling of the mutexes */
+	for (cnt = 0; cnt < PCnt; cnt++)
+	{
+		if (ceiling_priority)
+			s[cnt] = new SemaphoreCeiling();
+		else
+			s[cnt] = new SemaphoreInheritance();
+	}
+	cnt = 0;
 
-	/* s[0].PC = ???; */
-	
-	#endif
+	if (ceiling_priority)
+	{
+		/* set the priority ceiling of the mutexes */
+		/* s[0].PC = ???; */
+	}
 
 	/* creating a periodic  timer to generate pulses every 1 sec. */
-	Ctimer t(1,0);
+	Timer t(1,0);
 
 	while(1)
 	{
@@ -280,15 +216,12 @@ int main(void)
 		}
 		pthread_mutex_unlock(&mutex);
 
-		t.wait(); /* wait for the timer pulse */
+		t.Wait(); /* wait for the timer pulse */
 
 		cout << endl << "tick=" << cnt << /* ", active_p = " << active_p << */ "->";
 
 		ThreadManager(); /* to find out and run the active thread */
 		cnt++;
 	}
-
-	return 0;
 }
 
-#endif /* PRIORITY_INVERSION */
