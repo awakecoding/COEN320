@@ -12,6 +12,7 @@
 #include <sys/syspage.h> 
 
 #include "Timer.h"
+#include "Process.h"
 #include "SemaphoreCeiling.h"
 #include "SemaphoreInheritance.h"
 
@@ -43,7 +44,7 @@ static void* P1(void* arg)
 		pthread_mutex_lock(&mutex);
 
 		do {
-			pthread_cond_wait(&cond,&mutex); /* check for a message from ThreadManager */
+			pthread_cond_wait(&cond, &mutex); /* check for a message from ThreadManager */
 		} while (active_p != 1); /* check the active thread */
 
 		cout << "P1->";
@@ -151,8 +152,12 @@ static void ThreadManager()
 void run_deadlock_scenario(bool ceiling_priority)
 {
 	int cnt = 0;
+	Process* p[PCnt];
 	pthread_t P1_ID, P2_ID; /* p1, p2, threads */
-	
+
+	p[1] = new Process(1, (float*) &priority[1], PRIORITY_P1);
+	p[2] = new Process(2, (float*) &priority[2], PRIORITY_P2);
+
 	for (cnt = 0; cnt < PCnt; cnt++)
 	{
 		if (ceiling_priority)

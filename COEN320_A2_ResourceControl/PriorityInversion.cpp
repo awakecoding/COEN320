@@ -172,8 +172,13 @@ static void ThreadManager()
 void run_priority_inversion_scenario(bool ceiling_priority)
 {
 	int cnt = 0;
+	Process* p[PCnt];
 	pthread_t P1_ID, P2_ID, P3_ID; /* p1, p2, p3 threads */
-	
+
+	p[1] = new Process(1, (float*) &priority[1], PRIORITY_P1);
+	p[2] = new Process(2, (float*) &priority[2], PRIORITY_P2);
+	p[3] = new Process(3, (float*) &priority[3], PRIORITY_P3);
+
 	for (cnt = 0; cnt < PCnt; cnt++)
 	{
 		if (ceiling_priority)
