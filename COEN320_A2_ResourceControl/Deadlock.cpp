@@ -171,8 +171,13 @@ void run_deadlock_scenario(bool ceiling_priority)
 	{
 		/* set the priority ceiling of the mutexes */
 
-		/* s[1].PC= ???; */
-		/* s[2].PC= ???; */
+		/**
+		 * P1: locks S1, S2
+		 * P2: locks S2, S2
+		 */
+
+		s[1]->pc = PRIORITY_P1;
+		s[2]->pc = PRIORITY_P1;
 	}
 
 	/* creating a periodic  timer to generate pulses every 1 sec. */

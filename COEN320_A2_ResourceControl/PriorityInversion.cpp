@@ -191,7 +191,14 @@ void run_priority_inversion_scenario(bool ceiling_priority)
 	if (ceiling_priority)
 	{
 		/* set the priority ceiling of the mutexes */
-		/* s[0].PC = ???; */
+
+		/**
+		 * P1: locks s1
+		 * P2: locks s1
+		 * P3: locks s1
+		 */
+
+		s[0]->pc = PRIORITY_P1;
 	}
 
 	/* creating a periodic  timer to generate pulses every 1 sec. */
