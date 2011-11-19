@@ -9,7 +9,7 @@ class SemaphoreInheritance : public Semaphore
 public:
 	SemaphoreInheritance();
 	virtual ~SemaphoreInheritance();
-	void Lock(int p, Semaphore* s[]);
+	void Lock(int p);
 	void Unlock(int p);
 };
 

@@ -9,7 +9,7 @@ class SemaphoreCeiling : public Semaphore
 public:
 	SemaphoreCeiling();
 	virtual ~SemaphoreCeiling();
-	void Lock(int p, Semaphore* s[]);
+	void Lock(int p);
 	void Unlock(int p);
 };
 

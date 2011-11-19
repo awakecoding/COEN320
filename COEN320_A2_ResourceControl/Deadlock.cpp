@@ -37,7 +37,7 @@ static Semaphore* s[PCnt];
 
 static void* P1(void* arg)
 {
-	int cnt = 0;
+	int count = 0;
 
 	while (1)
 	{
@@ -49,29 +49,29 @@ static void* P1(void* arg)
 
 		cout << "P1: ";
 
-		if (cnt == 1) {
+		if (count == 1) {
 			cout << "attempting to lock S1";
-			s[1]->Lock(1,s);
+			s[1]->Lock(1);
 		}
-		else if (cnt == 2) {
+		else if (count == 2) {
 			cout << "attempting to lock S2";
-			s[2]->Lock(1,s);
+			s[2]->Lock(1);
 		}
-		else if (cnt == 3) {
+		else if (count == 3) {
 			cout << "unlocking S2";
 			s[2]->Unlock(1);
 		}
-		else if (cnt == 4) {
+		else if (count == 4) {
 			cout << "unlocking S1";
 			s[1]->Unlock(1);
 		}
-		else if (cnt == 5) {
+		else if (count == 5) {
 			cout << "thread execution completed";
 			priority[1] = PRIORITY_COMPLETED; /* to remove process 1 from the queue of ThreadManager */
 			pthread_mutex_unlock(&mutex);
 			break;
 		}
-		cnt++;
+		count++;
 
 		pthread_mutex_unlock(&mutex);
 	}
@@ -81,7 +81,7 @@ static void* P1(void* arg)
 
 static void* P2(void* arg)
 {
-	int cnt = 0;
+	int count = 0;
 
 	while(1)
 	{
@@ -93,30 +93,30 @@ static void* P2(void* arg)
 
 		cout << "P2: ";
 
-		if (cnt == 1) {
+		if (count == 1) {
 			cout << "attempting to lock S2";
-			s[2]->Lock(2,s);
+			s[2]->Lock(2);
 		}
-		else if (cnt == 2) {
+		else if (count == 2) {
 			cout << "attempting to lock S1";
-			s[1]->Lock(2,s);
+			s[1]->Lock(2);
 		}
-		else if (cnt == 3){
+		else if (count == 3){
 			cout << "unlocking S1";
 			s[1]->Unlock(2);
 		}
-		else if (cnt == 4) {
+		else if (count == 4) {
 			cout << "unlocking S2";
 			s[2]->Unlock(2);
 		}
-		else if (cnt == 5)
+		else if (count == 5)
 		{
 			cout << "thread execution completed";
 			priority[2] = PRIORITY_COMPLETED; /* to remove process 2 from the queue of ThreadManager */
 			pthread_mutex_unlock(&mutex);
 			break;
 		}
-		cnt++;
+		count++;
 
 		pthread_mutex_unlock(&mutex);
 	}
@@ -155,21 +155,23 @@ static void ThreadManager()
 
 void run_deadlock_scenario(bool ceiling_priority)
 {
-	int cnt = 0;
+	int count = 0;
 	Process* p[PCnt];
 	pthread_t P1_ID, P2_ID; /* p1, p2, threads */
 
 	p[1] = new Process(1, (float*) &priority[1], PRIORITY_P1);
 	p[2] = new Process(2, (float*) &priority[2], PRIORITY_P2);
 
-	for (cnt = 0; cnt < PCnt; cnt++)
+	for (count = 0; count < PCnt; count++)
 	{
 		if (ceiling_priority)
-			s[cnt] = new SemaphoreCeiling();
+			s[count] = new SemaphoreCeiling();
 		else
-			s[cnt] = new SemaphoreInheritance();
+			s[count] = new SemaphoreInheritance();
 	}
-	cnt = 0;
+
+	count = 0;
+	Semaphore::SetTable((Semaphore**) &s, 2);
 
 	if (ceiling_priority)
 	{
@@ -191,27 +193,27 @@ void run_deadlock_scenario(bool ceiling_priority)
 	{
 		pthread_mutex_lock(&mutex);
 		/* release P1 at t = 2 */
-		if (cnt == RELEASE_TIME_P1) {
+		if (count == RELEASE_TIME_P1) {
 			priority[1] = PRIORITY_P1;
 			pthread_create(&P1_ID , NULL, P1, NULL);
 		}
 		/* release P2 at t = 0 */
-		if(cnt == RELEASE_TIME_P2) {
+		if(count == RELEASE_TIME_P2) {
 			priority[2] = PRIORITY_P2;
 			pthread_create(&P2_ID , NULL, P2, NULL);
 		}
 		/* terminate the program at t = 30 */
-		if (cnt == 30) {
+		if (count == 30) {
 			break;
 		}
 		pthread_mutex_unlock(&mutex);
 
 		t.Wait(); /* wait for the timer pulse */
 
-		cout << endl << "TICK:" << cnt << "\t";
+		cout << endl << "TICK:" << count << "\t";
 
 		ThreadManager(); /* to find out and run the active thread */
-		cnt++;
+		count++;
 	}
 }
 

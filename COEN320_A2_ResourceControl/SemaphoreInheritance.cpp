@@ -13,7 +13,7 @@ SemaphoreInheritance::~SemaphoreInheritance()
 	pthread_mutex_destroy(&mutex);
 }
 
-void SemaphoreInheritance::Lock(int p, Semaphore* s[])
+void SemaphoreInheritance::Lock(int p)
 {
 	if (pthread_mutex_trylock(&mutex) == 0)
 	{
@@ -67,7 +67,7 @@ void SemaphoreInheritance::Unlock(int p)
 		locked_p->Resume();
 
 		/* lock semaphore for locked process */
-		this->Lock(locked_process, NULL);
+		this->Lock(locked_process);
 		locked_process = -1;
 	}
 	else
