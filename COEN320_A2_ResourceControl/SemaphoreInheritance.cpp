@@ -63,7 +63,7 @@ void SemaphoreInheritance::Unlock(int p)
 		locking_process = -1;
 
 		Process* locked_p = Process::GetProcess(locked_process);
-		cout << "..resuming P" << locked_process << "..";
+		cout << ", resuming P" << locked_process << "";
 		locked_p->Resume();
 
 		/* lock semaphore for locked process */

@@ -140,7 +140,7 @@ static void ThreadManager()
 
 	for (i = 1; i < PCnt; i++)
 	{
-		/* find the thread with the most priority and set it as active thread */
+		/* find the thread with the highest priority and set it as active thread */
 
 		if (priority[i] > p)
 		{
@@ -208,7 +208,7 @@ void run_deadlock_scenario(bool ceiling_priority)
 
 		t.Wait(); /* wait for the timer pulse */
 
-		cout << endl << "TICK:" << cnt << /* ", active_p = " << active_p << */ "\t";
+		cout << endl << "TICK:" << cnt << "\t";
 
 		ThreadManager(); /* to find out and run the active thread */
 		cnt++;
