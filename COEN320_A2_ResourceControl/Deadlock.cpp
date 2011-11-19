@@ -47,27 +47,27 @@ static void* P1(void* arg)
 			pthread_cond_wait(&cond, &mutex); /* check for a message from ThreadManager */
 		} while (active_p != 1); /* check the active thread */
 
-		cout << "P1->";
+		cout << "P1: ";
 
 		if (cnt == 1) {
-			cout << ".....Attempting to Lock Sem1 ..";
+			cout << "attempting to lock S1";
 			s[1]->Lock(1,s);
 		}
 		else if (cnt == 2) {
-			cout << ".....Attempting to Lock Sem2 ..";
+			cout << "attempting to lock S2";
 			s[2]->Lock(1,s);
 		}
 		else if (cnt == 3) {
-			cout << ".....Unlocking Sem2 ..";
+			cout << "unlocking S2";
 			s[2]->Unlock(1);
 		}
 		else if (cnt == 4) {
-			cout << ".....Unlocking Sem1 ..";
+			cout << "unlocking S1";
 			s[1]->Unlock(1);
 		}
 		else if (cnt == 5) {
-			cout << ".........P1 thread ends.........";
-			priority[1] = 0; /* to remove process 1 from the queue of ThreadManager */
+			cout << "thread execution completed";
+			priority[1] = PRIORITY_COMPLETED; /* to remove process 1 from the queue of ThreadManager */
 			pthread_mutex_unlock(&mutex);
 			break;
 		}
@@ -91,28 +91,28 @@ static void* P2(void* arg)
 			pthread_cond_wait(&cond,&mutex); /* check for a message from ThreadManager */
 		} while (active_p != 2); /* check the active thread	*/
 
-		cout << "P2->";
+		cout << "P2: ";
 
 		if (cnt == 1) {
-			cout << ".....Attempting to Lock Sem2 ..";
+			cout << "attempting to lock S2";
 			s[2]->Lock(2,s);
 		}
 		else if (cnt == 2) {
-			cout << ".....Attempting to Lock Sem1 ..";
+			cout << "attempting to lock S1";
 			s[1]->Lock(2,s);
 		}
 		else if (cnt == 3){
-			cout << ".....Unlocking Sem1 ..";
+			cout << "unlocking S1";
 			s[1]->Unlock(2);
 		}
 		else if (cnt == 4) {
-			cout << ".....Unlocking Sem2 ..";
+			cout << "unlocking S2";
 			s[2]->Unlock(2);
 		}
 		else if (cnt == 5)
 		{
-			cout << ".........P2 thread ends.........";
-			priority[2] = 0; /* to remove process 2 from the queue of ThreadManager */
+			cout << "thread execution completed";
+			priority[2] = PRIORITY_COMPLETED; /* to remove process 2 from the queue of ThreadManager */
 			pthread_mutex_unlock(&mutex);
 			break;
 		}
@@ -134,6 +134,10 @@ static void ThreadManager()
 	pthread_mutex_lock(&mutex);
 
 	p = -1;
+
+	if (priority[active_p] == PRIORITY_SUSPENDED)
+		active_p = -1;
+
 	for (i = 1; i < PCnt; i++)
 	{
 		/* find the thread with the most priority and set it as active thread */
@@ -204,7 +208,7 @@ void run_deadlock_scenario(bool ceiling_priority)
 
 		t.Wait(); /* wait for the timer pulse */
 
-		cout << endl << "tick=" << cnt << /* ", active_p = " << active_p << */ "->";
+		cout << endl << "TICK:" << cnt << /* ", active_p = " << active_p << */ "\t";
 
 		ThreadManager(); /* to find out and run the active thread */
 		cnt++;

@@ -23,13 +23,23 @@ void SemaphoreInheritance::Lock(int p, Semaphore* s[])
 	{
 		/* mutex already locked! */
 
-		cout << "..already owned by P" << locking_process << ", suspending..";
+		cout << ", already owned by P" << locking_process;
 
-		Process* phigh = Process::GetProcess(p);
-		Process* plow = Process::GetProcess(locking_process);
+		Process* plocked = Process::GetProcess(p);
+		Process* plocking = Process::GetProcess(locking_process);
 
-		plow->SetPriority(phigh->GetPriority() + 0.01);
-		locked_process = p;
+		if (plocking->IsSuspended())
+		{
+			cout << ", P" << locking_process << " is already suspended, deadlock!";
+			plocked->Suspend();
+		}
+		else
+		{
+			cout << ", suspending P" << p;
+			plocking->SetPriority(plocked->GetPriority());
+			plocked->Suspend();
+			locked_process = p;
+		}
 	}
 }
 
@@ -52,7 +62,9 @@ void SemaphoreInheritance::Unlock(int p)
 		pthread_mutex_unlock(&mutex);
 		locking_process = -1;
 
+		Process* locked_p = Process::GetProcess(locked_process);
 		cout << "..resuming P" << locked_process << "..";
+		locked_p->Resume();
 
 		/* lock semaphore for locked process */
 		this->Lock(locked_process, NULL);

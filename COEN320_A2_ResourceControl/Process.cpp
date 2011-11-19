@@ -24,6 +24,21 @@ Process::~Process()
 
 }
 
+void Process::Suspend()
+{
+	*(this->priority) = PRIORITY_SUSPENDED;
+}
+
+bool Process::IsSuspended()
+{
+	return (*(this->priority) == PRIORITY_SUSPENDED);
+}
+
+void Process::Resume()
+{
+	*(this->priority) = opriority;
+}
+
 void Process::SetPriority(float priority)
 {
 	*(this->priority) = priority;
