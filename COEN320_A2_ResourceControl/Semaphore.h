@@ -20,6 +20,7 @@ public:
 	static Semaphore* GetSemaphore(int s);
 	int locking_process;
 	int locked_process;
+	int number;
 protected:
 	pthread_mutex_t mutex;
 	static int count;

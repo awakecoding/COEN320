@@ -188,6 +188,8 @@ void run_priority_inversion_scenario(bool ceiling_priority)
 			s[count] = new SemaphoreCeiling();
 		else
 			s[count] = new SemaphoreInheritance();
+
+		s[count]->number = count;
 	}
 
 	count = 0;

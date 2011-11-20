@@ -3,6 +3,7 @@
 
 SemaphoreCeiling::SemaphoreCeiling()
 {
+	this->number = number;
 	locking_process = -1;
 	locked_process = -1;
 	pthread_mutex_init(&mutex, NULL);
@@ -119,6 +120,8 @@ void SemaphoreCeiling::Unlock(int p)
 					{
 						process->SetPriority(opriority);
 						proc->SetBlockingProcess(NULL);
+
+						cout << ", resuming P" << proc->GetNumber() << "";
 						proc->Resume();
 					}
 				}
