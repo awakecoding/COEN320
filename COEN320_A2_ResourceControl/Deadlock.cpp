@@ -33,6 +33,7 @@ static int active_p = 0; /* determine the active threads that should be run */
 
 static void ThreadManager(); /* this method is already implemented */
 
+static Process* p[PCnt];
 static Semaphore* s[PCnt];
 
 static void* P1(void* arg)
@@ -156,13 +157,12 @@ static void ThreadManager()
 void run_deadlock_scenario(bool ceiling_priority)
 {
 	int count = 0;
-	Process* p[PCnt];
 	pthread_t P1_ID, P2_ID; /* p1, p2, threads */
 
 	p[1] = new Process(1, (float*) &priority[1], PRIORITY_P1);
 	p[2] = new Process(2, (float*) &priority[2], PRIORITY_P2);
 
-	for (count = 0; count < PCnt; count++)
+	for (count = 1; count <= 2; count++)
 	{
 		if (ceiling_priority)
 			s[count] = new SemaphoreCeiling();
@@ -171,7 +171,8 @@ void run_deadlock_scenario(bool ceiling_priority)
 	}
 
 	count = 0;
-	Semaphore::SetTable((Semaphore**) &s, 2);
+	Process::SetTable((Process**) p, 2);
+	Semaphore::SetTable((Semaphore**) s, 2);
 
 	if (ceiling_priority)
 	{
@@ -206,6 +207,7 @@ void run_deadlock_scenario(bool ceiling_priority)
 		if (count == 30) {
 			break;
 		}
+
 		pthread_mutex_unlock(&mutex);
 
 		t.Wait(); /* wait for the timer pulse */

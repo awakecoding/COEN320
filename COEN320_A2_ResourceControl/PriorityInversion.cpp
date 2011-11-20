@@ -34,6 +34,7 @@ static int active_p = 0; /* determine the active thread that should be ran */
 
 static void ThreadManager();
 
+static Process* p[PCnt];
 static Semaphore* s[PCnt];
 
 static void* P1(void* arg)
@@ -54,13 +55,13 @@ static void* P1(void* arg)
 		{
 			/* try to acquire mutex after running for 1 unit */
 			cout << "attempting to lock S1";
-			s[0]->Lock(1);
+			s[1]->Lock(1);
 		}
 		else if (count == 3)
 		{
 			/* release mutex after running for 3 units */
 			cout << "unlocking S1";
-			s[0]->Unlock(1);
+			s[1]->Unlock(1);
 		}
 		else if (count == 4)
 		{
@@ -123,11 +124,11 @@ static void* P3(void* arg)
 
 		if (count == 1) {
 			cout << "attempting to lock S1";
-			s[0]->Lock(3);
+			s[1]->Lock(3);
 		}
 		else if (count == 3) {
 			cout << "unlocking S1";
-			s[0]->Unlock(3);
+			s[1]->Unlock(3);
 		}
 		else if (count == 5) {
 			cout << "thread execution completed";
@@ -175,14 +176,13 @@ static void ThreadManager()
 void run_priority_inversion_scenario(bool ceiling_priority)
 {
 	int count = 0;
-	Process* p[PCnt];
 	pthread_t P1_ID, P2_ID, P3_ID; /* p1, p2, p3 threads */
 
 	p[1] = new Process(1, (float*) &priority[1], PRIORITY_P1);
 	p[2] = new Process(2, (float*) &priority[2], PRIORITY_P2);
 	p[3] = new Process(3, (float*) &priority[3], PRIORITY_P3);
 
-	for (count = 0; count < PCnt; count++)
+	for (count = 1; count <= 3; count++)
 	{
 		if (ceiling_priority)
 			s[count] = new SemaphoreCeiling();
@@ -191,6 +191,7 @@ void run_priority_inversion_scenario(bool ceiling_priority)
 	}
 
 	count = 0;
+	Process::SetTable((Process**) &p, 3);
 	Semaphore::SetTable((Semaphore**) &s, 2);
 
 	if (ceiling_priority)
@@ -203,7 +204,7 @@ void run_priority_inversion_scenario(bool ceiling_priority)
 		 * P3: locks s1
 		 */
 
-		s[0]->pc = PRIORITY_P1;
+		s[1]->pc = PRIORITY_P1;
 	}
 
 	/* creating a periodic  timer to generate pulses every 1 sec. */

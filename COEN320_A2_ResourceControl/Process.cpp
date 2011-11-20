@@ -2,21 +2,14 @@
 #include "Process.h"
 
 int Process::count = 0;
-Process** Process::table = NULL;
+Process** Process::table;
 
 Process::Process(int number, float* priority, float opriority)
 {
 	this->number = number;
 	this->priority = priority;
 	this->opriority = opriority;
-	count++;
-
-	if (table == NULL)
-		table = (Process**) malloc(sizeof(Process*) * (count + 1));
-	else
-		table = (Process**) realloc(table, sizeof(Process*) * (count + 1));
-
-	table[number] = this;
+	this->blocking_p = NULL;
 }
 
 Process::~Process()
@@ -26,17 +19,17 @@ Process::~Process()
 
 void Process::Suspend()
 {
-	*(this->priority) = PRIORITY_SUSPENDED;
+	*(priority) = PRIORITY_SUSPENDED;
 }
 
 bool Process::IsSuspended()
 {
-	return (*(this->priority) == PRIORITY_SUSPENDED);
+	return (*priority == PRIORITY_SUSPENDED);
 }
 
 void Process::Resume()
 {
-	*(this->priority) = opriority;
+	*priority = opriority;
 }
 
 void Process::SetPriority(float priority)
@@ -51,7 +44,7 @@ float Process::GetPriority()
 
 float Process::GetOriginalPriority()
 {
-	return this->opriority;
+	return opriority;
 }
 
 int Process::GetNumber()
@@ -59,12 +52,33 @@ int Process::GetNumber()
 	return number;
 }
 
+bool Process::IsBlocked()
+{
+	return (this->blocking_p != NULL);
+}
+
+Process* Process::GetBlockingProcess()
+{
+	return this->blocking_p;
+}
+
+void Process::SetBlockingProcess(Process* process)
+{
+	this->blocking_p = process;
+}
+
 int Process::GetCount()
 {
-	return count;
+	return Process::count;
+}
+
+void Process::SetTable(Process** table, int count)
+{
+	Process::table = table;
+	Process::count = count;
 }
 
 Process* Process::GetProcess(int p)
 {
-	return table[p];
+	return Process::table[p];
 }

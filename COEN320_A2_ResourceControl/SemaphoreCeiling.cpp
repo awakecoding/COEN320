@@ -62,6 +62,7 @@ void SemaphoreCeiling::Lock(int p)
 		{
 			cout << ", suspending P" << p;
 			plocking->SetPriority(priority);
+			process->SetBlockingProcess(plocking);
 			process->Suspend();
 			locked_process = p;
 		}
@@ -75,12 +76,8 @@ void SemaphoreCeiling::Lock(int p)
 
 void SemaphoreCeiling::Unlock(int p)
 {
-	int s;
-	Semaphore* sem;
 	float priority;
 	float opriority;
-	Process* locked_p;
-	bool blocked = false;
 
 	Process* process = Process::GetProcess(p);
 
@@ -89,37 +86,43 @@ void SemaphoreCeiling::Unlock(int p)
 
 	if (priority != opriority)
 	{
-		locked_p = Process::GetProcess(locked_process);
+		int s;
+		int k;
+		Process* proc;
+		Semaphore* sem;
+		bool blocking = false;
 
-		/* unlock semaphore */
 		pthread_mutex_unlock(&mutex);
 		locking_process = -1;
+		locked_process = -1;
 
-		for (s = 1; s <= Semaphore::count; s++)
+		for (k = 1; k <= Process::GetCount(); k++)
 		{
-			sem = Semaphore::GetSemaphore(s);
+			proc = Process::GetProcess(k);
 
-			if (sem->locking_process == p)
+			if (proc->IsBlocked())
 			{
-				if (!(locked_p->GetPriority() > sem->pc))
+				if (proc->GetBlockingProcess()->GetNumber() == p)
 				{
-					blocked = true;
+					for (s = 1; s <= Semaphore::count; s++)
+					{
+						sem = Semaphore::GetSemaphore(s);
+
+						if (sem->locking_process == p)
+						{
+							/* this is another semaphore locked by the invoking process */
+							blocking = true;
+						}
+					}
+
+					if (!blocking)
+					{
+						process->SetPriority(opriority);
+						proc->SetBlockingProcess(NULL);
+						proc->Resume();
+					}
 				}
 			}
-		}
-
-		if (!blocked)
-		{
-			/* restore priority */
-			process->SetPriority(opriority);
-
-			locked_p = Process::GetProcess(locked_process);
-			cout << ", resuming P" << locked_process << "";
-			locked_p->Resume();
-
-			/* lock semaphore for locked process */
-			this->Lock(locked_process);
-			locked_process = -1;
 		}
 	}
 	else
